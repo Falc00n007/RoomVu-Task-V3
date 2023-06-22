@@ -1,0 +1,185 @@
+# Frahimi - roomvu task v3
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-deployment
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:latest
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: password
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: mysql-persistent-storage
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mysql-persistent-storage
+          persistentVolumeClaim:
+            claimName: mysql-pvc         
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+spec:
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laravel-deployment
+spec:
+  selector:
+    matchLabels:
+      app: laravel
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: laravel
+    spec:
+      containers:
+        - name: laravel
+          image: laravel:10.2.4
+          env:
+            - name: DB_HOST
+              value: mysql-service
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_DATABASE
+              value: laravel_db
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: password
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: laravel-persistent-storage
+              mountPath: /var/www/html/storage/app/public
+
+      volumes:
+        - name: laravel-persistent-storage
+          persistentVolumeClaim:
+            claimName: laravel-pvc         
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: laravel-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: laravel-service
+spec:
+  selector:
+    app: laravel
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 80
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+type: Opaque
+data:
+  password: |-
+    cGFzc3dvcmQxMjM=
+  username: bXlzd29yZA==
+---
+apiVersion: autoscaling/v2beta2  #This apiVersion and/or kind does not reference a schema known by Cloud Code. Please ensure you are using a valid apiVersion and kind.
+kind: HorizontalPodAutoscaler
+metadata:
+  name: nginx-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ngninx-deployment
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        targetAverageUtilization: 80
