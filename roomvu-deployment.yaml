@@ -104,7 +104,7 @@ spec:
     spec:
       containers:
         - name: laravel
-          image: laravel:10.2.4
+          image: bitnami/laravel:10.2.4
           env:
             - name: DB_HOST
               value: mysql-service
