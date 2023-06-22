@@ -1,6 +1,16 @@
 ![Logo](https://www.roomvu.com/_next/image?url=%2Fimages%2Flanding%2Fnew-homepage%2Flogo.svg&w=3840&q=50)
 
+
+<p align="center"> 
+<img src="https://labs.mysql.com/common/logos/mysql-logo.svg" width="100" style="margin-right: 10px;" >
+<img src="https://res.cloudinary.com/dtfbvvkyp/image/upload/v1566331377/laravel-logolockup-cmyk-red.svg" width="150">
+<img src="https://www.php.net/images/php8/logo_php8_2.svg" width="110" style="margin-right: 10px;"> 
+<img src="https://www.nginx.com/wp-content/uploads/2020/05/NGINX-product-icon.svg" width="70" style="margin-right: 10px;"> 
+<img src="https://www.docker.com/wp-content/uploads/2022/03/Docker-Logo-White-RGB_Vertical.png" width="100" style="margin-right: 10px;">
+<img src="https://kubernetes.io/images/nav_logo2.svg" width="210" style="margin-right: 10px;"> </p>
+
 # DevOps Project  sample task for RoomVu.
+# According to the documentation of the previous versions, the final task is presented as requested.
 
 
 # Task
@@ -60,13 +70,11 @@ My personal infrastructure build requirements has two main k8s simulation tools 
 # Current structure and test project files:
 <pre>
 .
-├── **apache-fpm**
+├── apache-fpm
 │   └── var
 │       └── www
 │           └── html
-├── composer.json
-├── Dockerfile
-├── **mysql**
+├── mysql
 │   ├── factories
 │   │   └── UserFactory.php
 │   ├── migrations
@@ -77,283 +85,67 @@ My personal infrastructure build requirements has two main k8s simulation tools 
 │   │   └── 2019_12_14_000001_create_personal_access_tokens_table.php
 │   └── seeders
 │       └── DatabaseSeeder.php
-├── **nginx**
+├── nginx
 │   └── nginx.conf
-├── **readme.md**
-├── **roomvu-deploy-cheat.md**
-└── **roomvu-deployment.yaml**
+├── README.md
+└── roomvu-deployment.yaml
 
-**10 directories, 13 files**
+10 directories, 10 files
 </pre>
 
-# Docker file and Create image:
+This is a Kubernetes deployment YAML file for an application consisting of three components: nginx, mysql, and laravel.
 
-This Dockerfile is used to a Docker image for a Laravel 10 application. Here's a breakdown of each section:
+The nginx component is deployed using the "nginx-deployment" Deployment object and exposed using the "nginx-service" Service object. The "nginx-deployment" object specifies that one replica of the nginx container should be created and started. The "nginx-service" object specifies that the service should use a LoadBalancer type to expose the nginx container on port 80.
 
-<pre>
-# Use the official PHP image as the base image
-FROM php:8.1-apache
-</pre>
+The mysql component is deployed using the "mysql-deployment" Deployment object and exposed using the "mysql-service" Service object. The "mysql-deployment" object specifies that one replica of the mysql container should be created and started. The "mysql-service" object specifies that the service should expose the mysql container on port 3306.
 
-This line specifies the base image for our Docker container, which is the official PHP 8.1 Apache image.
+The laravel component is deployed using the "laravel-deployment" Deployment object and exposed using the "laravel-service" Service object. The "laravel-deployment" object specifies that one replica of the laravel container should be created and started. The "laravel-service" object specifies that the service should use a LoadBalancer type to expose the laravel container on port 80.
 
-<pre>
-# Install the required packages and extensions
-RUN apt-get update \
-    && apt-get install -y git zip unzip libpng-dev libonig-dev libxml2-dev \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd \
-    && pecl install redis \
-    && docker-php-ext-enable redis
-</pre>
+In addition to the containers, there are PersistentVolumeClaim objects defined for both the mysql and laravel deployments, specifying the storage resource requirements for each.
 
-This section installs the required packages and extensions needed to run the Laravel application. It updates the package repository, installs some dependencies like Git, Zip, and Unzip, then installs PHP extensions like pdo_mysql, mbstring, exif, pcntl, bcmath, and gd. Finally, it installs Redis via PECL (a PHP extension installer) and enables its inclusion.
+Finally, there is a Secret object called "mysql-secret" which contains the username and password used by the mysql container to authenticate with the mysql database.
 
-<pre>
-# Copy the application code to the container
-COPY . /var/www/html
-</pre>
-
-This line copies all files in the current directory (denoted by `.`) to the `/var/www/html` directory inside the container.
-<pre>
-# Set the document root
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
-RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
-</pre>
-
-This section sets the document root for the Apache web server running inside the container to `/var/www/html/public`. It then uses `sed` to replace instances of `/var/www/html` and `/var/www/` with `${APACHE_DOCUMENT_ROOT}` in the Apache server configuration files.
-
-<pre>
-# Install Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-</pre>
-
-This line installs Composer, a dependency manager for PHP, into the container.
-
-<pre>
-# Install dependencies
-RUN composer install --no-interaction --no-scripts --no-progress --prefer-dist
-</pre>
-
-This section installs the application's dependencies using Composer.
-<pre>
-# Set the working directory
-WORKDIR /var/www/html
-</pre>
-
-This line sets the working directory to `/var/www/html`, which is where the Laravel application resides inside the container.
-<pre>
-# Expose port 80
-EXPOSE 80
-</pre>
-
-This line exposes port 80, which is the default HTTP port, so that it can be accessed from outside the container.
-<pre>
-# Start Apache
-CMD ["apache2-foreground"]
-</pre>
-
-This line starts the Apache web server 8.2 for laravel 10 in the foreground when the container is launched on kubernetes cluster.
-
-
-To **create a Docker image** from Dockerfile, the **docker build command** with the appropriate options. Here's syntax:
-
-<pre>
-docker build -t roomvu-app.
-</pre>
-
-
-# Registry and project image container transfer and preparation:
-
-Due to problems accessing the public services registry from Iran and problems like this,
-I used Docker registry 2.0 on my machine for storing and distributing my own Docker images.
-
-* **what is the docerk registry 2.0 ? **
-Docker Registry 2.0 is a tool that is used to store and distribute Docker images. It allows you to create and manage your own private registry, where you can store and share Docker images within your organization or with other trusted users.
-
-* how to use it, on my **local machine** ?
-
-**Run a local registry: Quick Version**
-<pre>
-$ docker run -d -p 5000:5000 --restart always --name registry registry:2
-</pre>
-
-* So, i push roomvu-app docker images to my local registery runed bove on localhost and exposed port 5000 like this command:
-
-<pre>
-$ docker tag roomvu-app localhost:5000/roomvu-app
-
-$ docker push localhost:5000/roomvu-app
-</pre>
-
-In this case, when you use **docker images** command, you can see your application images added to local images repositye with 
-Prefix like this : 
-
-<pre>
-REPOSITORY                     TAG                 IMAGE ID            CREATED               SIZE
-localhost:5000/roomvu-app      latest              7e0aa2d69a15        3 minutes ago         795MB
-</pre>
+Additionally, there is a HorizontalPodAutoscaler object for the nginx deployment, which allows automatic scaling based on CPU usage metrics.
 
 
 # How To Deployment roomvu-app on kubernetes ? 
 
 * To create and Deployment roomvu-app on kubernetes cluster, you can use **roomvu-deployment.yaml**.
 
-At the first, let's to introduce what is the file content for!
+#To run this deployment.yaml file, follow the below steps:
 
+* 1. Make sure you have Kubernetes cluster installed and running.
+* 2. Open a command prompt or terminal window.
+* 3. Navigate to the directory where the deployment.yaml file is located.
+* 4. Run the following command to create the resources specified in the deployment.yaml file: 
 
-This YAML file contains several Kubernetes manifests for deploying and managing a Roomvu application. Let's break it down line by line:
-<pre>
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: roomvu-app
-  labels:
-    app: roomvu-app
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: roomvu-app
-  template:
-    metadata:
-      labels:
-        app: roomvu-app
-    spec:
-</pre>
-The first part specifies the API version and kind of Kubernetes object we're creating, which is a deployment in this case. The **metadata** section provides a name for the deployment and labels to identify it. The **spec** section includes information about how many replicas of the application to create and how to select them using label selectors. Finally, the template section defines the pod **template** that will be used to run the application.
+  <pre>
+   kubectl apply -f deployment.yaml
+  </pre>
+
+# This will create all the necessary resources such as deployments, services, persistent volume claims, secrets, and horizontal pod autoscaler.
+
+After running the above command, you can verify that the resources have been created by running the following commands:
+
+* 1. To get the list of deployments, run:
 
 <pre>
-      containers:
-      - name: roomvu-app
-        image: localhost:5000/roomvu-app:latest
-        ports:
-        - containerPort: 80
-        env:
-        - name: DB_HOST
-          value: mysql
-        - name: DB_PORT
-          value: "3306"
-        - name: DB_DATABASE
-          value: my_database
-        - name: DB_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: mysql-secret
-              key: username
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mysql-secret
-              key: password
+   kubectl get deployments
 </pre>
 
-This section specifies the **containers** to run in the pod template. In this case, there is only one container named **roomvu-app**. It uses an image hosted on **localhost:5000**, exposes port **80**, and sets environment variables for the database connection details, which are sourced from a Kubernetes secret named **mysql-secret**.
+* 2. To get the list of services, run:
 
 <pre>
----
-# mysql persistent volume yaml
-
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: mysql-pv
-spec:
-  capacity:
-    storage: 2Gi
-  accessModes:
-    - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
-  hostPath:
-    path: /data/mysql
+   kubectl get services
 </pre>
 
-This is a manifest for a Kubernetes **PersistentVolume**, which is a way to store data outside of a container's ephemeral filesystem. This particular volume uses a host path at **/data/mysql** and provides 2GB of storage.
+* 3. To get the list of pods, run:
 <pre>
----
-# mysql persistent volume claim yaml
-
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mysql-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 2Gi
-  selector:
-    matchLabels:
-      app: mysql
+   kubectl get pods
 </pre>
 
-This manifest creates a **PersistentVolumeClaim** that will bind to the previously defined **PersistentVolume**. It specifies that it needs read/write access and 2GB of storage, and selects the **PersistentVolume** using a label match.
+# If everything is configured correctly, you should see output indicating that the resources have been created successfully.
 
-<pre>
----
-
-# Services manifest are used with [ load balancing, Port Mapping, External Access ]
-
-apiVersion: v1
-kind: Service
-metadata:
-  name: roomvu-app
-  labels:
-    app: roomvu-app
-spec:
-  ports:
-  - name: http
-    port: 80
-    targetPort: 80
-  selector:
-    app: roomvu-app
-</pre>
-
-This is a **Service** manifest, which provides network connectivity to pods running in a deployment. This service exposes port **80** and targets the **roomvu-app** deployment using label selectors.
-
-<pre>
----
-# mysql-secret yaml
-
-apiVersion: v1
-kind: Secret
-metadata:
-  name: mysql-secret
-type: Opaque
-data:
-  username: cm9vbXZ1Og==
-  password: cm9vbXZ1Og==
-
-</pre>
-
-This manifest creates a Kubernetes **Secret** object named **mysql-secret**, which is used to store sensitive data like passwords. The encoded values for **username** and **password** are included in the **data** section.
-
-<pre>
----
-# The ingress manifest is define to expose your Laravel 10 application to external clients.
-
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: roomvu-app
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-spec:
-  rules:
-  - host: roomvu-app.example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: roomvu-app
-            port:
-              name: http
-</pre>
-
-This manifest creates an **Ingress** resource, which exposes the **roomvu-app** deployment to external clients through a URL. This particular In use.
 
 # how to check the task is done!
 
@@ -364,6 +156,13 @@ Here's command to list all running Kubernetes pods:
 <pre>
 kubectl get pods -n <namespace>
 </pre>
+
+to check to list all the PersistentVolumeClaims (PVCs) for mysql and Laravel that exist in a cluster.
+
+<pre>
+kybectl get pvc
+</pre>
+
 
 Replace **<namespace>** with the namespace where the Roomvu app is deployed. If you're not sure what namespace to use, try **kubectl get namespaces** to list all available namespaces.
 
@@ -381,12 +180,38 @@ Assuming the ingress controller has been properly configured with an Ingress res
 
 I hope this helps! Let me know if you have any further questions.
 
+<p align="center">
+  <a href="https://skillicons.dev">
+    <img src="https://skillicons.dev/icons?i=git,gitlab,github,githubactions,jenkins,nginx,kubernetes,docker,ansible,gcp,aws,azure,linux,mongodb,mysql,postgres,prometheus,laravel,py,django,flask,rabbitmq,redis," />
+  </a>
+</p>
+
 call me on +98 939 63 10 462 or mail me  farshidrahimi.ca@gmail.com
 
 * **Final and important explanation**
 
 **This is changed and customized and named version 2, Version 2 of this product has the same features and functionality as Version 1, but with improved flexibility for customization thanks to the separation of manifest files.
 
-This change will make it easier for DovOps guys to tailor the product to their specific needs. The development and implementation steps for Version 2 remain the same as in previous versions, leveraging the expertise of DevOps guys.**
 
 
+**Considering that i saied, the submitted task will have more aspects of checking and understanding my technical values for you. I tried to explain the steps completely in order and in detail. Or in general terms (line by line). But in the end, my suggestion for doing this task professionally will be as follows:**
+
+**Managing Docker images in Kubernetes can be done using a combination of Ansible, Terraform, and/or Puppet. Here are some steps you can follow to get started:**
+
+*   Define your infrastructure as code (IaC): Decide which IaC tool you want to use - Ansible, Terraform, or Puppet - to define your infrastructure resources such as nodes, containers, and services.
+
+*   Define the Docker image: Define your Docker image within your IaC code. You can specify the container image tag, repository location, and relevant configurations.
+
+*   Build and push the Docker image: Use a Dockerfile to build your application, and then push it to a container registry such as DockerHub or Google Container Registry.
+
+*  Deploy the image: Use your IaC tool to deploy your Docker image to Kubernetes. This can be done by defining a Kubernetes deployment YAML file that specifies the Docker image and any other required configuration settings.
+
+* Automate the process: Once you have defined your IaC code to deploy your Docker images in Kubernetes, you can automate the entire process by using CI/CD tools such as Jenkins, GitLab CI, or CircleCI.
+
+**By following these steps, you can manage your Docker image projects in Kubernetes using Ansible, Terraform, or Puppet.**
+
+
+
+> **Warning**
+> **Attention Task Tester:**
+**Local** testing is often different from testing in a real **product environment**. I have tried to explain the details of all the stories involved in this test in every stage. However, due to the nature of many infrastructure cases, there may be a need to manually check and make some changes and versioning to this test, which is usually negotiable to finalize. Please bear with**me**. **Thank you**.
