@@ -175,11 +175,14 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: laravel-deployment
+    name: ngninx-deployment
   minReplicas: 1
   maxReplicas: 10
   metrics:
     - type: Resource
       resource:
         name: cpu
-        targetAverageUtilization: 80
+        target:
+          type: Utilization
+          averageUtilization: 80
+
