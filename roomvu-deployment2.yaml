@@ -167,7 +167,7 @@ data:
     cGFzc3dvcmQxMjM=
   username: bXlzd29yZA==
 ---
-apiVersion: autoscaling/v2beta2  #This apiVersion and/or kind does not reference a schema known by Cloud Code. Please ensure you are using a valid apiVersion and kind.
+apiVersion: autoscaling/v2beta2
 kind: HorizontalPodAutoscaler
 metadata:
   name: nginx-hpa
@@ -182,4 +182,6 @@ spec:
     - type: Resource
       resource:
         name: cpu
-        targetAverageUtilization: 80
+        target:
+          type: Utilization
+          averageUtilization: 80
