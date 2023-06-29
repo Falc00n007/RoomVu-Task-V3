@@ -112,6 +112,71 @@ Additionally, there is a HorizontalPodAutoscaler object for the nginx deployment
 
 * To create and Deployment roomvu-app on kubernetes cluster, you can use **roomvu-deployment.yaml**.
 
+# How to validating configuration files, primarily YAML manifest
+# Officela kubernetes schemas, we are using kubeval tool like this:
+
+<pre>
+┌──(root㉿DarkHole2)-[/roomvu-tasks/final-task/roomvu-task1-k8s/v3]
+└─# kubeval roomvu-deployment2.yaml                    
+PASS - roomvu-deployment2.yaml contains a valid Deployment (nginx-deployment)
+PASS - roomvu-deployment2.yaml contains a valid Service (nginx-service)
+PASS - roomvu-deployment2.yaml contains a valid Deployment (mysql-deployment)
+PASS - roomvu-deployment2.yaml contains a valid PersistentVolumeClaim (mysql-pvc)
+PASS - roomvu-deployment2.yaml contains a valid Service (mysql-service)
+PASS - roomvu-deployment2.yaml contains a valid Deployment (laravel-deployment)
+PASS - roomvu-deployment2.yaml contains a valid PersistentVolumeClaim (laravel-pvc)
+PASS - roomvu-deployment2.yaml contains a valid Service (laravel-service)
+PASS - roomvu-deployment2.yaml contains a valid Secret (mysql-secret)
+PASS - roomvu-deployment2.yaml contains a valid HorizontalPodAutoscaler (nginx-hpa)
+</pre>
+
+* By running Kubeval on your configuration files, you can perform static analysis and
+  validate various aspects such as correct resource types, required fields, format
+  compliance, and other rules defined in the Kubernetes schemas. This helps prevent
+  issues like invalid configurations, missing values, or incompatible settings that
+  could potentially lead to failed deployments or runtime errors.
+
+* I use this validation on minikube and mikrok8s, but if you want to validation on 
+  other valiation structure and version you can use somethigns like this, for Examle
+  validation for OpenShift - 1.5.1
+
+<pre>
+┌──(root㉿DarkHole2)-[/roomvu-tasks/final-task/roomvu-task1-k8s/v3]
+└─# kubeval --openshift -v 1.5.1 roomvu-deployment.yaml
+PASS - roomvu-deployment.yaml contains a valid Deployment (nginx-deployment)
+PASS - roomvu-deployment.yaml contains a valid Service (nginx-service)
+PASS - roomvu-deployment.yaml contains a valid Deployment (mysql-deployment)
+PASS - roomvu-deployment.yaml contains a valid PersistentVolumeClaim (mysql-pvc)
+PASS - roomvu-deployment.yaml contains a valid Service (mysql-service)
+PASS - roomvu-deployment.yaml contains a valid Deployment (laravel-deployment)
+PASS - roomvu-deployment.yaml contains a valid PersistentVolumeClaim (laravel-pvc)
+PASS - roomvu-deployment.yaml contains a valid Service (laravel-service)
+PASS - roomvu-deployment.yaml contains a valid Secret (mysql-secret)
+PASS - roomvu-deployment.yaml contains a valid HorizontalPodAutoscaler (nginx-hpa)
+</pre>
+
+In the given example, it appears to be a command-line output of running the `kubeval` command with certain flags and arguments. `kubeval` is a tool used for validating Kubernetes configuration files against the schema.
+
+Here's a breakdown of the example:
+
+* The current working directory is `/roomvu-tasks/final-task/roomvu-task1-k8s/v3`.
+* The command executed is `kubeval --openshift -v 1.5.1 roomvu-deployment.yaml`.
+* The `--openshift` flag indicates that the configuration should be validated against the OpenShift schema.
+* The `-v 1.5.1` flag specifies the version of Kubernetes schema to use for validation.
+* `roomvu-deployment.yaml` is the Kubernetes configuration file being validated.
+
+The output of the command shows the results of the validation for various resources defined in the `roomvu-deployment.yaml` file. Each line starts with either "PASS" or "FAIL" followed by a message indicating the result of the validation check for a specific resource.
+
+In this case, all the listed resources (`Deployment`, `Service`, `PersistentVolumeClaim`, `Secret`, and `HorizontalPodAutoscaler`) have passed the validation checks, as indicated by the "PASS" prefix and the resource name in parentheses.
+
+For example:
+* The `roomvu-deployment.yaml` contains a valid `Deployment` resource named `nginx-deployment`.
+* It also contains a valid `Service` resource named `nginx-service`.
+* Similarly, other resources like `mysql-deployment`, `mysql-pvc`, `mysql-service`, `laravel-deployment`, `laravel-pvc`, `laravel-service`, `mysql-secret`, and `nginx-hpa` are also present and successfully validated.
+
+Overall, it seems that the `roomvu-deployment.yaml` file has been validated and found to contain valid Kubernetes resources according to the specified version and schema.
+
+
 #To run this deployment.yaml file, follow the below steps:
 
 * 1. Make sure you have Kubernetes cluster installed and running.
@@ -120,7 +185,7 @@ Additionally, there is a HorizontalPodAutoscaler object for the nginx deployment
 * 4. Run the following command to create the resources specified in the deployment.yaml file: 
 
   <pre>
-   kubectl apply -f deployment.yaml
+   kubectl apply -f roomvu-deployment.yaml
   </pre>
 
 # This will create all the necessary resources such as deployments, services, persistent volume claims, secrets, and horizontal pod autoscaler.
